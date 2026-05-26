@@ -40,9 +40,16 @@ async function chargerPolices() {
     robotoBoldPath
   ).catch(e => console.error('Roboto Bold error:', e.message));
 
+  const emojiPath = path.join(os.tmpdir(), 'noto-sans-emoji.ttf');
+  await telechargerFichier(
+    'https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoEmoji-Regular.ttf',
+    emojiPath
+  ).catch(e => console.error('Noto Emoji error:', e.message));
+
   try {
     if (fs.existsSync(robotoPath)) registerFont(robotoPath, { family: 'Roboto', weight: 'normal' });
     if (fs.existsSync(robotoBoldPath)) registerFont(robotoBoldPath, { family: 'Roboto', weight: 'bold' });
+    if (fs.existsSync(emojiPath)) registerFont(emojiPath, { family: 'NotoEmoji' });
     console.log('Polices chargées !');
   } catch(e) { console.error('Font register error:', e.message); }
 }
@@ -129,7 +136,7 @@ async function genererGraphique(voteData) {
   ctx.fillRect(0, 0, W, H);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px Roboto';
+  ctx.font = 'bold 18px Roboto, NotoEmoji';
   ctx.textAlign = 'center';
   ctx.fillText(`Résultats — Candidature de ${voteData.candidatTag}`, W / 2, 35);
 
@@ -140,7 +147,7 @@ async function genererGraphique(voteData) {
   votants.forEach((v, i) => {
     const y = paddingTop + i * ligneVotant;
     ctx.textAlign = 'left';
-    ctx.font = '14px Roboto';
+    ctx.font = '14px Roboto, NotoEmoji';
     ctx.fillStyle = v.label.includes('Ouaip') ? '#57f287' : '#ed4245';
     ctx.fillText(v.label, 20, y + 18);
     ctx.fillStyle = '#ffffff';
@@ -156,14 +163,14 @@ async function genererGraphique(voteData) {
   const barreH = 26;
 
   const dessinerBarre = (label, valeur, couleur, y) => {
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px Roboto, NotoEmoji'; ctx.textAlign = 'right';
     ctx.fillText(label, 95, y + barreH / 2 + 5);
     ctx.fillStyle = '#2b2d31'; ctx.beginPath(); ctx.roundRect(100, y, barreMaxW, barreH, 6); ctx.fill();
     if (valeur > 0) {
       ctx.fillStyle = couleur; ctx.beginPath();
       ctx.roundRect(100, y, Math.max((valeur / total) * barreMaxW, 8), barreH, 6); ctx.fill();
     }
-    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px Roboto';
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px Roboto, NotoEmoji';
     const pct = total > 0 ? Math.round((valeur / total) * 100) : 0;
     ctx.fillText(`${valeur} (${pct}%)`, 100 + barreMaxW + 8, y + barreH / 2 + 5);
   };
@@ -178,13 +185,13 @@ async function genererGraphique(voteData) {
   const verdictTexte = egalite ? '⚖️ ÉGALITÉ' : accepte ? 'ACCEPTÉ 🎉' : 'REFUSÉ ❌';
   const verdictCouleur = egalite ? '#fee75c' : accepte ? '#57f287' : '#ed4245';
   ctx.fillStyle = verdictCouleur;
-  ctx.font = 'bold 36px Roboto';
+  ctx.font = 'bold 36px Roboto, NotoEmoji';
   ctx.textAlign = 'center';
   ctx.fillText(verdictTexte, W / 2, verdictY + 50);
 
   if (aVeto) {
     const veteurs = Object.values(voteData.votes).filter(v => v.type === 'veto').map(v => v.username);
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px Roboto';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px Roboto, NotoEmoji';
     ctx.fillText(`🦝 Véto posé par : ${veteurs.join(', ')}`, W / 2, verdictY + 72);
   }
 
@@ -397,6 +404,5 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(config.token);
-
 
 client.login(config.token);
