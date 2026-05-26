@@ -3,7 +3,17 @@ const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder
 } = require('discord.js');
 const fs = require('fs');
-const { createCanvas } = require('canvas');
+const { createCanvas, registerFont } = require('canvas');
+const ROBOTO_B64 = require('./font');
+const os = require('os');
+const path = require('path');
+
+// Enregistrer la police depuis base64
+const fontPath = path.join(os.tmpdir(), 'roboto.ttf');
+if (!require('fs').existsSync(fontPath)) {
+  require('fs').writeFileSync(fontPath, Buffer.from(ROBOTO_B64, 'base64'));
+}
+try { registerFont(fontPath, { family: 'Roboto' }); } catch(e) { console.error('Font error:', e.message); }
 
 const config = {
   token: process.env.DISCORD_TOKEN,
@@ -86,7 +96,7 @@ async function genererGraphique(voteData) {
   ctx.fillRect(0, 0, W, H);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px sans-serif';
+  ctx.font = 'bold 18px Roboto';
   ctx.textAlign = 'center';
   ctx.fillText(`Résultats — Candidature de ${voteData.candidatTag}`, W / 2, 35);
 
@@ -97,7 +107,7 @@ async function genererGraphique(voteData) {
   votants.forEach((v, i) => {
     const y = paddingTop + i * ligneVotant;
     ctx.textAlign = 'left';
-    ctx.font = '14px sans-serif';
+    ctx.font = '14px Roboto';
     ctx.fillStyle = v.label.includes('Ouaip') ? '#57f287' : '#ed4245';
     ctx.fillText(v.label, 20, y + 18);
     ctx.fillStyle = '#ffffff';
@@ -113,14 +123,14 @@ async function genererGraphique(voteData) {
   const barreH = 26;
 
   const dessinerBarre = (label, valeur, couleur, y) => {
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'right';
     ctx.fillText(label, 95, y + barreH / 2 + 5);
     ctx.fillStyle = '#2b2d31'; ctx.beginPath(); ctx.roundRect(100, y, barreMaxW, barreH, 6); ctx.fill();
     if (valeur > 0) {
       ctx.fillStyle = couleur; ctx.beginPath();
       ctx.roundRect(100, y, Math.max((valeur / total) * barreMaxW, 8), barreH, 6); ctx.fill();
     }
-    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px Roboto';
     const pct = total > 0 ? Math.round((valeur / total) * 100) : 0;
     ctx.fillText(`${valeur} (${pct}%)`, 100 + barreMaxW + 8, y + barreH / 2 + 5);
   };
@@ -135,13 +145,13 @@ async function genererGraphique(voteData) {
   const verdictTexte = egalite ? '⚖️ ÉGALITÉ' : accepte ? 'ACCEPTÉ 🎉' : 'REFUSÉ ❌';
   const verdictCouleur = egalite ? '#fee75c' : accepte ? '#57f287' : '#ed4245';
   ctx.fillStyle = verdictCouleur;
-  ctx.font = 'bold 36px sans-serif';
+  ctx.font = 'bold 36px Roboto';
   ctx.textAlign = 'center';
   ctx.fillText(verdictTexte, W / 2, verdictY + 50);
 
   if (aVeto) {
     const veteurs = Object.values(voteData.votes).filter(v => v.type === 'veto').map(v => v.username);
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px sans-serif';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px Roboto';
     ctx.fillText(`🦝 Véto posé par : ${veteurs.join(', ')}`, W / 2, verdictY + 72);
   }
 
@@ -351,6 +361,9 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.update({ embeds: [construireEmbedEnCours(voteData)], components: [construireBoutons()] });
   }
 });
+
+client.login(config.token);
+
 
 client.login(config.token);
 
