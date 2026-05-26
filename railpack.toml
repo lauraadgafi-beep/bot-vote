@@ -1,0 +1,13 @@
+{
+  "packages": {
+    "cairo": "",
+    "pango": "",
+    "libpng": "",
+    "libjpeg-turbo": "",
+    "giflib": "",
+    "librsvg": "",
+    "pixman": "",
+    "pkg-config": "",
+    "python3": ""
+  }
+}
