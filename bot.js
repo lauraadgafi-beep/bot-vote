@@ -3,17 +3,44 @@ const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder
 } = require('discord.js');
 const fs = require('fs');
+const https = require('https');
 const { createCanvas, registerFont } = require('canvas');
 const ROBOTO_B64 = require('./font');
 const os = require('os');
 const path = require('path');
 
-// Enregistrer la police depuis base64
-const fontPath = path.join(os.tmpdir(), 'roboto.ttf');
-if (!require('fs').existsSync(fontPath)) {
-  require('fs').writeFileSync(fontPath, Buffer.from(ROBOTO_B64, 'base64'));
+// Charger Roboto depuis base64
+const robotoPath = path.join(os.tmpdir(), 'roboto.ttf');
+if (!fs.existsSync(robotoPath)) {
+  fs.writeFileSync(robotoPath, Buffer.from(ROBOTO_B64, 'base64'));
 }
-try { registerFont(fontPath, { family: 'Roboto' }); } catch(e) { console.error('Font error:', e.message); }
+try { registerFont(robotoPath, { family: 'Roboto' }); } catch(e) { console.error('Roboto error:', e.message); }
+
+// Télécharger et charger Noto Emoji au démarrage
+const emojiPath = path.join(os.tmpdir(), 'noto-emoji.ttf');
+function chargerPoliceEmoji() {
+  return new Promise((resolve) => {
+    if (fs.existsSync(emojiPath)) {
+      try { registerFont(emojiPath, { family: 'NotoEmoji' }); } catch(e) {}
+      return resolve();
+    }
+    console.log('Téléchargement police emoji...');
+    const file = fs.createWriteStream(emojiPath);
+    https.get('https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf', (res) => {
+      res.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        try { registerFont(emojiPath, { family: 'NotoEmoji' }); } catch(e) { console.error('Emoji font error:', e.message); }
+        console.log('Police emoji chargée !');
+        resolve();
+      });
+    }).on('error', (e) => {
+      console.error('Erreur téléchargement emoji font:', e.message);
+      resolve();
+    });
+  });
+}
+
 
 const config = {
   token: process.env.DISCORD_TOKEN,
@@ -96,7 +123,7 @@ async function genererGraphique(voteData) {
   ctx.fillRect(0, 0, W, H);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px Roboto';
+  ctx.font = 'bold 18px Roboto, NotoEmoji';
   ctx.textAlign = 'center';
   ctx.fillText(`Résultats — Candidature de ${voteData.candidatTag}`, W / 2, 35);
 
@@ -107,7 +134,7 @@ async function genererGraphique(voteData) {
   votants.forEach((v, i) => {
     const y = paddingTop + i * ligneVotant;
     ctx.textAlign = 'left';
-    ctx.font = '14px Roboto';
+    ctx.font = '14px Roboto, NotoEmoji';
     ctx.fillStyle = v.label.includes('Ouaip') ? '#57f287' : '#ed4245';
     ctx.fillText(v.label, 20, y + 18);
     ctx.fillStyle = '#ffffff';
@@ -123,14 +150,14 @@ async function genererGraphique(voteData) {
   const barreH = 26;
 
   const dessinerBarre = (label, valeur, couleur, y) => {
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'bold 13px Roboto, NotoEmoji'; ctx.textAlign = 'right';
     ctx.fillText(label, 95, y + barreH / 2 + 5);
     ctx.fillStyle = '#2b2d31'; ctx.beginPath(); ctx.roundRect(100, y, barreMaxW, barreH, 6); ctx.fill();
     if (valeur > 0) {
       ctx.fillStyle = couleur; ctx.beginPath();
       ctx.roundRect(100, y, Math.max((valeur / total) * barreMaxW, 8), barreH, 6); ctx.fill();
     }
-    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px Roboto';
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.font = 'bold 13px Roboto, NotoEmoji';
     const pct = total > 0 ? Math.round((valeur / total) * 100) : 0;
     ctx.fillText(`${valeur} (${pct}%)`, 100 + barreMaxW + 8, y + barreH / 2 + 5);
   };
@@ -145,13 +172,13 @@ async function genererGraphique(voteData) {
   const verdictTexte = egalite ? '⚖️ ÉGALITÉ' : accepte ? 'ACCEPTÉ 🎉' : 'REFUSÉ ❌';
   const verdictCouleur = egalite ? '#fee75c' : accepte ? '#57f287' : '#ed4245';
   ctx.fillStyle = verdictCouleur;
-  ctx.font = 'bold 36px Roboto';
+  ctx.font = 'bold 36px Roboto, NotoEmoji';
   ctx.textAlign = 'center';
   ctx.fillText(verdictTexte, W / 2, verdictY + 50);
 
   if (aVeto) {
     const veteurs = Object.values(voteData.votes).filter(v => v.type === 'veto').map(v => v.username);
-    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px Roboto';
+    ctx.fillStyle = '#b5bac1'; ctx.font = 'italic 13px Roboto, NotoEmoji';
     ctx.fillText(`🦝 Véto posé par : ${veteurs.join(', ')}`, W / 2, verdictY + 72);
   }
 
@@ -244,7 +271,8 @@ const client = new Client({
 
 const sessionsConfig = new Map();
 
-client.once('ready', () => {
+client.once('ready', async () => {
+  await chargerPoliceEmoji();
   charger();
   console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
 });
@@ -363,7 +391,3 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(config.token);
-
-
-client.login(config.token);
-
