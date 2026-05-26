@@ -1,16 +1,4 @@
 {
-  "packages": {
-    "cairo": "",
-    "pango": "",
-    "libpng-dev": "",
-    "libjpeg-dev": "",
-    "giflib-tools": "",
-    "librsvg2-dev": "",
-    "libpixman-1-dev": "",
-    "pkg-config": "",
-    "python3": "",
-    "build-essential": ""
-  },
   "aptPackages": [
     "libcairo2-dev",
     "libpango1.0-dev",
